@@ -1,62 +1,14 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { Alert, Box, Button, Card, CardContent, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Grid, Stack, TextField, Typography } from "@mui/material";
-import { buildTransferAction } from "../application/transaction-broker";
+import { Alert, Button, Card, CardContent, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Stack, Typography } from "@mui/material";
+import { createTransferApproval, approveRequest } from "../application/approval-service";
 import { useDashboardStore } from "../application/dashboard-store-v2";
+import { trustedToken } from "../infrastructure/trusted-contracts";
 
 export function SendScreen() {
   const { account, tokens } = useDashboardStore();
-  const [recipient, setRecipient] = React.useState("");
-  const [amount, setAmount] = React.useState("");
-  const [memo, setMemo] = React.useState("");
-  const [preview, setPreview] = React.useState<any>(null);
-  const [error, setError] = React.useState<string | null>(null);
-
+  const [recipient, setRecipient] = React.useState(""); const [amount, setAmount] = React.useState(""); const [memo, setMemo] = React.useState(""); const [preview, setPreview] = React.useState<any>(null); const [approved, setApproved] = React.useState(false); const [error, setError] = React.useState("");
   const token = tokens.find((item) => item.symbol === "WAX") ?? { symbol: "WAX", contract: "eosio.token", precision: 8 };
-
-  const handlePreview = () => {
-    try {
-      setError(null);
-      const action = buildTransferAction(account, recipient, token, amount, memo);
-      setPreview(action);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      setPreview(null);
-    }
-  };
-
-  return (
-    <Card>
-      <CardContent>
-        <Stack spacing={2.5}>
-          <Box>
-            <Typography variant="h5">Send</Typography>
-            <Typography variant="body2" color="text.secondary">Prepare a validated transfer before signing.</Typography>
-          </Box>
-          {error && <Alert severity="error">{error}</Alert>}
-          <TextField label="From" value={account} disabled />
-          <TextField label="Recipient" value={recipient} onChange={(e) => setRecipient(e.target.value)} />
-          <TextField label="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
-          <TextField label="Memo" value={memo} onChange={(e) => setMemo(e.target.value)} />
-          <Button variant="contained" onClick={handlePreview} disabled={!account || !recipient || !amount}>Review transaction</Button>
-        </Stack>
-
-        {preview && <Dialog open onClose={() => setPreview(null)} maxWidth="sm" fullWidth>
-          <DialogTitle>Confirm transfer</DialogTitle>
-          <DialogContent>
-            <Stack spacing={1.5}>
-              <Typography><strong>To:</strong> {preview.data.to}</Typography>
-              <Typography><strong>Amount:</strong> {preview.data.quantity}</Typography>
-              <Typography><strong>Memo:</strong> {preview.data.memo || "none"}</Typography>
-              <Chip label={`Token: ${token.symbol}`} />
-            </Stack>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setPreview(null)}>Cancel</Button>
-            <Button variant="contained" onClick={() => setPreview(null)}>Sign now</Button>
-          </DialogActions>
-        </Dialog>}
-      </CardContent>
-    </Card>
-  );
+  const review = () => { try { setError(""); trustedToken(token); setPreview(createTransferApproval(account, token, recipient, amount, memo)); setApproved(false); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } };
+  const approve = () => { try { if (!approved) throw new Error("Check the confirmation box before signing."); approveRequest(preview, "I confirm this transaction"); setPreview(null); setError("Approved request is ready for the wallet signing service."); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } };
+  return <Card><CardContent><Stack spacing={2}><Typography variant="h5">Send</Typography><Typography color="text.secondary">Only allowlisted token contracts can reach signing.</Typography>{error && <Alert severity="info">{error}</Alert>}<input aria-label="recipient" placeholder="Recipient" value={recipient} onChange={(e) => setRecipient(e.target.value)} /><input aria-label="amount" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} /><input aria-label="memo" placeholder="Memo" value={memo} onChange={(e) => setMemo(e.target.value)} /><Button variant="contained" onClick={review}>Review transaction</Button></Stack><Dialog open={Boolean(preview)} onClose={() => setPreview(null)}><DialogTitle>Explicit transaction approval</DialogTitle><DialogContent><Typography>Contract: {preview?.actions[0].account}</Typography><Typography>Action: {preview?.actions[0].name}</Typography><Typography>Recipient: {preview?.actions[0].data.to}</Typography><Typography>Quantity: {preview?.actions[0].data.quantity}</Typography><Typography>Memo: {preview?.actions[0].data.memo || "none"}</Typography><FormControlLabel control={<Checkbox checked={approved} onChange={(e) => setApproved(e.target.checked)} />} label="I reviewed and approve this transaction" /></DialogContent><DialogActions><Button onClick={() => setPreview(null)}>Reject</Button><Button variant="contained" onClick={approve}>Approve and continue</Button></DialogActions></Dialog></CardContent></Card>;
 }
