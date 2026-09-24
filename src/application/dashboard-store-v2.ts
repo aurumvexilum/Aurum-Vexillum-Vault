@@ -1,10 +1,11 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { getBalances, getHistory, getNFTs, fetchTokenList, VERIFIED_TOKENS, Token } from "../lib/wax";
+import { getBalances, getHistory, getNFTs } from "../lib/wax";
+import { loadTokenMetadataSafely } from "../infrastructure/token-service";
 
 export type DashboardState = {
   account: string;
-  tokens: Token[];
+  tokens: any[];
   balances: any[];
   history: any[];
   nfts: any[];
@@ -19,7 +20,7 @@ export const useDashboardStore = create<DashboardState>()(
   persist(
     (set, get) => ({
       account: "",
-      tokens: VERIFIED_TOKENS,
+      tokens: [],
       balances: [],
       history: [],
       nfts: [],
@@ -35,7 +36,7 @@ export const useDashboardStore = create<DashboardState>()(
         }
         set({ loading: true, error: null });
         try {
-          const tokens = await fetchTokenList();
+          const tokens = await loadTokenMetadataSafely();
           const [balances, history, nfts] = await Promise.all([
             getBalances(account, tokens),
             getHistory(account),
@@ -48,9 +49,9 @@ export const useDashboardStore = create<DashboardState>()(
       },
     }),
     {
-      name: "wax-dashboard",
+      name: "wax-dashboard-v2",
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ account: state.account, tokens: state.tokens }),
+      partialize: (state) => ({ account: state.account }),
     },
   ),
 );
