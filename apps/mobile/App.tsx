@@ -1,3 +1,5 @@
 import React from "react";
-import {SafeAreaView,Text,View,Button} from "react-native";
-export default function App(){return <SafeAreaView><View><Text>WAX Vault Mobile</Text><Text>Shared RPC, validation, recovery, and transaction services are used by this client.</Text><Button title="Refresh dashboard" onPress={()=>undefined}/></View></SafeAreaView>}
+import { SafeAreaView, Text, View, Button, StyleSheet, useColorScheme } from "react-native";
+import { mobileRpc } from "./core";
+export default function App(){const scheme=useColorScheme();const [status,setStatus]=React.useState("Ready");return <SafeAreaView style={[styles.safe,{backgroundColor:scheme==="dark"?"#0b1020":"#f5f7fb"}]}><View style={styles.container}><Text style={[styles.title,{color:scheme==="dark"?"#fff":"#111827"}]}>WAX Vault</Text><Text style={[styles.subtitle,{color:scheme==="dark"?"#cbd5e1":"#475569"}]}>Native wallet powered by shared RPC, validation, recovery, and transaction services.</Text><Button title="Check network" onPress={async()=>{try{await mobileRpc.call(rpc=>rpc.get_info());setStatus("WAX network available")}catch{setStatus("All RPC endpoints unavailable")}}}/><Text style={styles.status}>{status}</Text></View></SafeAreaView>}
+const styles=StyleSheet.create({safe:{flex:1},container:{padding:24,gap:18},title:{fontSize:32,fontWeight:"800"},subtitle:{fontSize:16,lineHeight:24},status:{marginTop:16,fontSize:16}});
