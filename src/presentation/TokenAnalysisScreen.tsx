@@ -1,114 +1,30 @@
 import React from "react";
-import { Alert, Button, Card, CardContent, Chip, CircularProgress, Grid, Stack, Typography } from "@mui/material";
-import { OpenInNew, Refresh } from "@mui/icons-material";
+import { Alert, Avatar, Button, Card, CardContent, Chip, CircularProgress, FormControl, Grid, InputLabel, MenuItem, Select, Skeleton, Stack, TextField, Typography } from "@mui/material";
+import { ContentCopy, OpenInNew, Refresh } from "@mui/icons-material";
 import { Link, useLocation } from "react-router-dom";
-import { fetchTokenPools, PoolLiquidity } from "../infrastructure/token-liquidity-service";
+import { fetchTokenPools, PoolLiquidity, TokenPoolResult } from "../infrastructure/token-liquidity-service";
 import { Token } from "../lib/wax";
+
+const explorer = (contract: string) => `https://waxblock.io/account/${encodeURIComponent(contract)}`;
+const percent = (value?: number) => value == null ? "—" : value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+function quality(pool: PoolLiquidity) { const value = pool.liquidityValue ?? 0; return value >= 100000 ? ["Healthy liquidity", "success"] : value >= 10000 ? ["Medium liquidity", "warning"] : ["Low liquidity", "error"]; }
+function copy(value: string) { void navigator.clipboard?.writeText(value); }
 
 export function TokenAnalysisScreen() {
   const location = useLocation();
-  const token = (location.state as { token?: Token } | null)?.token;
-  const [pools, setPools] = React.useState<PoolLiquidity[]>([]);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState("");
-
-  const loadPools = React.useCallback(async () => {
-    if (!token) return;
-    try {
-      setLoading(true);
-      setError("");
-      setPools(await fetchTokenPools(token));
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
-  React.useEffect(() => {
-    void loadPools();
-  }, [loadPools]);
-
-  if (!token) {
-    return (
-      <Stack spacing={2}>
-        <Alert severity="warning">No token was selected for analysis.</Alert>
-        <Button component={Link} to="/assets" variant="contained">Back to tokens</Button>
-      </Stack>
-    );
-  }
-
-  return (
-    <Stack spacing={3}>
-      <Card>
-        <CardContent>
-          <Stack spacing={1.5}>
-            <Typography variant="h4">{token.name || token.symbol} analysis</Typography>
-            <Typography color="text.secondary">
-              {token.symbol} · {token.contract} · {token.precision} decimals
-            </Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap">
-              <Chip label="Alcor + TacSwap" color="primary" variant="outlined" />
-              <Button onClick={() => void loadPools()} disabled={loading} startIcon={loading ? <CircularProgress size={16} /> : <Refresh />}>
-                Refresh pools
-              </Button>
-            </Stack>
-          </Stack>
-        </CardContent>
-      </Card>
-
-      {error && <Alert severity="error">{error}</Alert>}
-
-      <Card>
-        <CardContent>
-          <Stack spacing={2}>
-            <BoxTitle />
-            {loading ? (
-              <CircularProgress />
-            ) : pools.length === 0 ? (
-              <Alert severity="info">No matching Alcor or TacSwap pools were returned for this token.</Alert>
-            ) : (
-              <Grid container spacing={2}>
-                {pools.map((pool) => (
-                  <Grid item xs={12} md={6} key={`${pool.exchange}-${pool.id}`}>
-                    <Card variant="outlined" sx={{ height: "100%" }}>
-                      <CardContent>
-                        <Stack spacing={1.5}>
-                          <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
-                            <Typography variant="h6">{pool.pair}</Typography>
-                            <Chip label={pool.exchange} size="small" color={pool.exchange === "Alcor" ? "primary" : "secondary"} />
-                          </Stack>
-                          <Typography variant="body2">Reserve A: {pool.reserveA || "Not provided"}</Typography>
-                          <Typography variant="body2">Reserve B: {pool.reserveB || "Not provided"}</Typography>
-                          <Typography variant="body2">Liquidity / TVL: {pool.liquidity || "Not provided"}</Typography>
-                          <Typography variant="body2">Fee: {pool.fee || "Not provided"}</Typography>
-                          {pool.price != null && <Typography variant="body2">Last price: {pool.price}</Typography>}
-                          {pool.url && <Button component="a" href={pool.url} target="_blank" rel="noreferrer" endIcon={<OpenInNew />}>Open pool</Button>}
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
-            )}
-          </Stack>
-        </CardContent>
-      </Card>
-
-      <Alert severity="warning">
-        Pool data is informational and may become stale. Verify token contracts, reserves, price impact, slippage, and route before approving a trade.
-      </Alert>
-    </Stack>
-  );
+  const token = (location.state as { token?: Token & { balance?: string; description?: string } } | null)?.token;
+  const [result, setResult] = React.useState<TokenPoolResult | null>(null); const [loading, setLoading] = React.useState(false); const [error, setError] = React.useState(""); const [filter, setFilter] = React.useState("all"); const [sort, setSort] = React.useState("liquidity");
+  const load = React.useCallback(async (force = false) => { if (!token) return; try { setLoading(true); setError(""); setResult(await fetchTokenPools(token, force)); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setLoading(false); } }, [token]);
+  React.useEffect(() => { void load(); }, [load]);
+  if (!token) return <Stack spacing={2}><Alert severity="warning">No token was selected for analysis.</Alert><Button component={Link} to="/assets" variant="contained">Back to tokens</Button></Stack>;
+  const pools = (result?.pools ?? []).filter((pool) => filter === "all" || pool.exchange === filter).sort((a, b) => sort === "liquidity" ? (b.liquidityValue ?? 0) - (a.liquidityValue ?? 0) : a.pair.localeCompare(b.pair));
+  const exchanges = new Set((result?.pools ?? []).map((pool) => pool.exchange)); const best = result?.pools[0]; const risk = !result || result.pools.length === 0 ? "No verified liquidity pools were returned." : exchanges.size === 1 ? "Only one exchange currently reports liquidity; routing and price discovery may be limited." : result.pools.some((pool) => !pool.reserveA || !pool.reserveB || (pool.liquidityValue ?? 0) < 10000) ? "Some pools report missing or low reserves. Watch price impact and slippage." : "Liquidity is available across multiple exchanges.";
+  return <Stack spacing={3}>
+    <Card><CardContent><Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ xs: "stretch", sm: "center" }}><Avatar src={(token as any).logo || (token as any).icon}>{token.symbol[0]}</Avatar><Box><Typography variant="h4">{token.name || token.symbol} snapshot</Typography><Typography color="text.secondary">{token.symbol} · {token.precision} decimals</Typography></Box><Stack direction="row" spacing={1} sx={{ ml: { sm: "auto" } }}><Button onClick={() => copy(token.contract)} startIcon={<ContentCopy />}>Copy contract</Button><Button component="a" href={explorer(token.contract)} target="_blank" rel="noreferrer" endIcon={<OpenInNew />}>View explorer</Button></Stack></Stack><Grid container spacing={2} sx={{ mt: 1 }}><Grid item xs={12} sm={3}><Metric label="Balance held" value={(token as any).balance || "Not supplied"} /></Grid><Grid item xs={12} sm={3}><Metric label="USD-ish value" value={(token as any).usdValue ? `$${(token as any).usdValue}` : "Not available"} /></Grid><Grid item xs={12} sm={3}><Metric label="Pools found" value={String(result?.pools.length ?? "—")} /></Grid><Grid item xs={12} sm={3}><Metric label="Top DEX" value={best?.exchange || "—"} /></Grid></Grid>{(token as any).description && <Typography sx={{ mt: 2 }} color="text.secondary">{(token as any).description}</Typography>}</CardContent></Card>
+    <Alert severity={result?.pools.length === 0 ? "error" : exchanges.size === 1 ? "warning" : "info"}>{risk}</Alert>
+    {result && result.pools.length > 1 && <Card><CardContent><Typography variant="h6">Best route</Typography><Typography sx={{ mt: 1 }}>Best supported liquidity: <strong>{best?.exchange}</strong></Typography><Typography>Best pool liquidity: <strong>{best?.liquidity || "Not reported"}</strong></Typography><Typography>Estimated slippage: <strong>{(best?.liquidityValue ?? 0) >= 100000 ? "low" : "moderate to high"}</strong></Typography><Typography>Recommended route: <strong>WAX → {token.symbol} via {best?.exchange}</strong></Typography></CardContent></Card>}
+    <Card><CardContent><Stack spacing={2}><Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={2}><Box><Typography variant="h5">Liquidity pools</Typography><Typography variant="body2" color="text.secondary">Normalized, deduplicated, and sorted by reported liquidity.</Typography></Box><Stack direction="row" spacing={1}><FormControl size="small"><InputLabel>Exchange</InputLabel><Select label="Exchange" value={filter} onChange={(e) => setFilter(String(e.target.value))}><MenuItem value="all">All pools</MenuItem><MenuItem value="Alcor">Alcor only</MenuItem><MenuItem value="TacSwap">TacSwap only</MenuItem></Select></FormControl><TextField select size="small" label="Sort" value={sort} onChange={(e) => setSort(e.target.value)}><MenuItem value="liquidity">Highest liquidity</MenuItem><MenuItem value="pair">Pair name</MenuItem></TextField><Button onClick={() => void load(true)} disabled={loading} startIcon={loading ? <CircularProgress size={16} /> : <Refresh />}>Refresh</Button></Stack></Stack>{error && <Alert severity="warning">{error}</Alert>}{result?.sources.alcor === "unavailable" && result.sources.tacswap === "ok" && <Alert severity="warning">Alcor unavailable; checked TacSwap only.</Alert>}{result?.sources.tacswap === "unavailable" && result.sources.alcor === "ok" && <Alert severity="warning">TacSwap unavailable; checked Alcor only.</Alert>}{loading ? <Grid container spacing={2}>{[1, 2, 3, 4].map((x) => <Grid item xs={12} md={6} key={x}><Skeleton variant="rounded" height={190} /></Grid>)}</Grid> : pools.length === 0 ? <Alert severity="info">Liquidity data not reported for this token and filter.</Alert> : <Grid container spacing={2}>{pools.map((pool) => { const [label, color] = quality(pool); return <Grid item xs={12} md={6} key={`${pool.exchange}-${pool.id}`}><Card variant="outlined" sx={{ height: "100%" }}><CardContent><Stack spacing={1.5}><Stack direction="row" justifyContent="space-between" gap={1}><Typography variant="h6">{pool.pair}</Typography><Stack direction="row" spacing={1}><Chip size="small" label={pool.exchange} /><Chip size="small" color={color as any} label={label} /></Stack></Stack><Typography variant="body2">Reserve A: {pool.reserveA || "Liquidity data not reported"}</Typography><Typography variant="body2">Reserve B: {pool.reserveB || "Liquidity data not reported"}</Typography><Typography variant="body2">Liquidity / TVL: {pool.liquidity || "Liquidity data not reported"}</Typography><Typography variant="body2">Fee: {pool.fee || "Not reported"}</Typography>{pool.price != null && <Typography variant="body2">Last price: {percent(pool.price)}</Typography>}<Stack direction="row" spacing={1}><Button size="small" onClick={() => copy(pool.id)} startIcon={<ContentCopy />}>Copy pool ID</Button>{pool.url && <Button size="small" component="a" href={pool.url} target="_blank" rel="noreferrer" endIcon={<OpenInNew />}>Open pool</Button>}</Stack></Stack></CardContent></Card></Grid>; })}</Grid>}</Stack></CardContent></Card>
+    <Alert severity="warning">This is informational only. Always check slippage, price impact, reserves, token contracts, and route before swapping.</Alert>
+  </Stack>;
 }
-
-function BoxTitle() {
-  return (
-    <Stack>
-      <Typography variant="h5">Liquidity pools</Typography>
-      <Typography variant="body2" color="text.secondary">
-        Live data returned by the exchange API or WAX contract tables.
-      </Typography>
-    </Stack>
-  );
-}
+function Metric({ label, value }: { label: string; value: string }) { return <Box><Typography variant="caption" color="text.secondary">{label}</Typography><Typography variant="h6">{value}</Typography></Box>; }
