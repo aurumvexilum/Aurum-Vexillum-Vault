@@ -5,6 +5,41 @@ import { DashboardScreen } from "./presentation/DashboardScreen";
 import { AssetsScreen } from "./presentation/AssetsScreen";
 import { TokenAnalysisScreen } from "./presentation/TokenAnalysisScreen";
 import { Shell } from "./presentation/Shell";
-import { SendScreen } from "./presentation/SendScreen"; import { ReceiveScreen } from "./presentation/ReceiveScreen"; import { TradeScreen } from "./presentation/TradeScreen"; import { NftScreen } from "./presentation/NftScreen"; import { RecoveryScreen } from "./presentation/RecoveryScreen"; import { DappScreen } from "./presentation/DappScreen"; import { FavoritesScreen } from "./presentation/FavoritesScreen"; import { ExplorerScreen } from "./presentation/ExplorerScreen"; import { SettingsScreen } from "./presentation/SettingsScreen"; import { ResourcesScreen } from "./presentation/ResourcesScreen";
-const router = createBrowserRouter([{ path: "/", element: <Shell />, children: [{ index: true, element: <DashboardScreen /> }, { path: "assets", element: <AssetsScreen /> }, { path: "assets/analysis", element: <TokenAnalysisScreen /> }, { path: "nfts", element: <NftScreen /> }, { path: "resources", element: <ResourcesScreen /> }, { path: "send", element: <SendScreen /> }, { path: "receive", element: <ReceiveScreen /> }, { path: "trade", element: <TradeScreen /> }, { path: "dapps", element: <DappScreen /> }, { path: "favorites", element: <FavoritesScreen /> }, { path: "explorer", element: <ExplorerScreen /> }, { path: "recovery", element: <RecoveryScreen /> }, { path: "settings", element: <SettingsScreen /> }] }]);
-createRoot(document.getElementById("root")!).render(<React.StrictMode><RouterProvider router={router} /></React.StrictMode>);
+import { SendScreen } from "./presentation/SendScreen";
+import { ReceiveScreen } from "./presentation/ReceiveScreen";
+import { TradeScreen } from "./presentation/TradeScreen";
+import { NftScreen } from "./presentation/NftScreen";
+import { RecoveryScreen } from "./presentation/RecoveryScreen";
+import { DappScreen } from "./presentation/DappScreen";
+import { FavoritesScreen } from "./presentation/FavoritesScreen";
+import { ExplorerScreen } from "./presentation/ExplorerScreen";
+import { SettingsScreen } from "./presentation/SettingsScreen";
+import { ResourcesScreen } from "./presentation/ResourcesScreen";
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Shell />,
+    children: [
+      { index: true, element: <DashboardScreen /> },
+      { path: "assets", element: <AssetsScreen /> },
+      { path: "assets/analysis", element: <TokenAnalysisScreen /> },
+      { path: "nfts", element: <NftScreen /> },
+      { path: "resources", element: <ResourcesScreen /> },
+      { path: "send", element: <SendScreen /> },
+      { path: "receive", element: <ReceiveScreen /> },
+      { path: "trade", element: <TradeScreen /> },
+      { path: "dapps", element: <DappScreen /> },
+      { path: "favorites", element: <FavoritesScreen /> },
+      { path: "explorer", element: <ExplorerScreen /> },
+      { path: "recovery", element: <RecoveryScreen /> },
+      { path: "settings", element: <SettingsScreen /> },
+    ],
+  },
+]);
+
+createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <RouterProvider router={router} />
+  </React.StrictMode>,
+);
