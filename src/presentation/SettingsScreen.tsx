@@ -1,60 +1,9 @@
 import React from "react";
-import { Alert, Button, Card, CardContent, FormControlLabel, Grid, MenuItem, Select, Stack, Switch, TextField, Typography } from "@mui/material";
+import { Alert, Button, Card, CardContent, Divider, FormControlLabel, Grid, MenuItem, Select, Stack, Switch, TextField, Typography } from "@mui/material";
+import { useDashboardStore } from "../application/dashboard-store-v2";
 
 export function SettingsScreen() {
-  const [darkMode, setDarkMode] = React.useState(localStorage.getItem("wax-theme") === "dark");
-  const [showHidden, setShowHidden] = React.useState(true);
-  const [rpc, setRpc] = React.useState("https://wax.greymass.com");
-  const [language, setLanguage] = React.useState("en");
-
-  const persistSettings = () => {
-    localStorage.setItem("wax-theme", darkMode ? "dark" : "light");
-    localStorage.setItem("wax-show-hidden", String(showHidden));
-    localStorage.setItem("wax-rpc", rpc);
-    localStorage.setItem("wax-locale", language);
-  };
-
-  return (
-    <Stack spacing={3}>
-      <Card>
-        <CardContent>
-          <Typography variant="h4">Settings</Typography>
-          <Typography color="text.secondary" sx={{ mt: 1 }}>Local wallet preferences and display controls.</Typography>
-        </CardContent>
-      </Card>
-
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Stack spacing={2}>
-                <Typography variant="h6">Appearance</Typography>
-                <FormControlLabel control={<Switch checked={darkMode} onChange={(e) => setDarkMode(e.target.checked)} />} label="Dark mode" />
-                <Select value={language} onChange={(e) => setLanguage(String(e.target.value))}>
-                  <MenuItem value="en">English</MenuItem>
-                  <MenuItem value="es">Spanish</MenuItem>
-                  <MenuItem value="fr">French</MenuItem>
-                  <MenuItem value="de">German</MenuItem>
-                </Select>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Stack spacing={2}>
-                <Typography variant="h6">Wallet preferences</Typography>
-                <FormControlLabel control={<Switch checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} />} label="Show hidden tokens in dashboard" />
-                <TextField label="Preferred RPC endpoint" value={rpc} onChange={(e) => setRpc(e.target.value)} />
-                <Alert severity="warning">These settings are local to this browser and do not change your WAX account or your keys.</Alert>
-                <Button variant="contained" onClick={persistSettings}>Save settings</Button>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </Stack>
-  );
+  const { account } = useDashboardStore(); const [darkMode, setDarkMode] = React.useState(localStorage.getItem("wax-theme") === "dark"); const [showHidden, setShowHidden] = React.useState(localStorage.getItem("wax-show-hidden") !== "false"); const [rpc, setRpc] = React.useState(localStorage.getItem("wax-rpc") || "https://wax.greymass.com"); const [language, setLanguage] = React.useState(localStorage.getItem("wax-locale") || "en"); const [autoLock, setAutoLock] = React.useState(localStorage.getItem("wax-auto-lock") !== "false"); const [biometric, setBiometric] = React.useState(localStorage.getItem("wax-biometric") === "true"); const [saved, setSaved] = React.useState(false);
+  const save = () => { localStorage.setItem("wax-theme", darkMode ? "dark" : "light"); localStorage.setItem("wax-show-hidden", String(showHidden)); localStorage.setItem("wax-rpc", rpc); localStorage.setItem("wax-locale", language); localStorage.setItem("wax-auto-lock", String(autoLock)); localStorage.setItem("wax-biometric", String(biometric)); setSaved(true); window.setTimeout(() => setSaved(false), 2500); };
+  return <Stack spacing={3}><Card><CardContent><Typography variant="h4">Settings</Typography><Typography color="text.secondary" sx={{ mt: 1 }}>Manage local display, network, and wallet security preferences.</Typography></CardContent></Card><Grid container spacing={2}><Grid item xs={12} md={6}><Card><CardContent><Stack spacing={2}><Typography variant="h6">Appearance</Typography><FormControlLabel control={<Switch checked={darkMode} onChange={(e) => setDarkMode(e.target.checked)} />} label="Dark mode" /><FormControlLabel control={<Switch checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} />} label="Show hidden tokens on dashboard" /><Select value={language} onChange={(e) => setLanguage(String(e.target.value))}><MenuItem value="en">English</MenuItem><MenuItem value="es">Spanish</MenuItem><MenuItem value="fr">French</MenuItem><MenuItem value="de">German</MenuItem></Select></Stack></CardContent></Card></Grid><Grid item xs={12} md={6}><Card><CardContent><Stack spacing={2}><Typography variant="h6">Network</Typography><TextField label="Preferred RPC endpoint" value={rpc} onChange={(e) => setRpc(e.target.value)} helperText="Use HTTPS and a trusted WAX endpoint." /><Alert severity="info">Changing this value affects future reads only after the application wires it into the RPC broker.</Alert></Stack></CardContent></Card></Grid><Grid item xs={12}><Card><CardContent><Stack spacing={2}><Typography variant="h6">Account security</Typography><Typography variant="body2" color="text.secondary">Account: {account || "Not selected"}</Typography><FormControlLabel control={<Switch checked={autoLock} onChange={(e) => setAutoLock(e.target.checked)} />} label="Auto-lock vault after inactivity" /><FormControlLabel control={<Switch checked={biometric} onChange={(e) => setBiometric(e.target.checked)} />} label="Request biometric unlock on supported native devices" /><Divider /><Alert severity="warning">These toggles store preferences only. They do not implement encryption, biometrics, or key rotation by themselves. Never store recovery phrases in settings or local storage.</Alert><Button variant="contained" onClick={save}>Save settings</Button>{saved && <Alert severity="success">Settings saved locally.</Alert>}</Stack></CardContent></Card></Grid></Grid></Stack>;
 }

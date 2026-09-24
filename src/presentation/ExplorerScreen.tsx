@@ -1,55 +1,22 @@
 import React from "react";
-import { Alert, Button, Card, CardContent, Chip, Grid, Stack, Typography } from "@mui/material";
-import { OpenInNew } from "@mui/icons-material";
+import { Alert, Button, Card, CardContent, Chip, CircularProgress, Grid, MenuItem, Select, Stack, TextField, Typography } from "@mui/material";
+import { OpenInNew, Refresh } from "@mui/icons-material";
+import { getWaxAccountSummary, getWaxNetworkSnapshot, waxAccountUrl, waxBlockUrl } from "../infrastructure/wax-explorer-service";
+import { SUPPORTED_DAPPS } from "../application/favorite-dapp-store";
 
-const explorers = [
-  { name: "WAXBlock", url: "https://waxblock.io", description: "Official-style explorer for WAX blocks, transactions, accounts, and token activity.", category: "Explorer" },
-  { name: "WAX Items", url: "https://waxitems.io", description: "NFT and collection-focused WAX marketplace insights.", category: "NFT" },
-  { name: "Bdata.one", url: "https://bdata.one", description: "Cross-chain and WAX analytics and explorer pages.", category: "Analytics" },
-  { name: "EOS Authority", url: "https://eosauthority.com", description: "General Antelope explorer features with WAX account and resource data.", category: "Explorer" },
-  { name: "AtomicHub", url: "https://wax.atomichub.io", description: "NFT marketplace and explorer for WAX collections and assets.", category: "Marketplace" },
-  { name: "DappRadar", url: "https://dappradar.com/rankings/protocol/wax", description: "Curated rankings and activity tracking for active WAX dApps.", category: "Directory" },
-  { name: "Alcor Exchange", url: "https://alcor.exchange", description: "Market data and token swap insights for WAX ecosystems.", category: "DeFi" },
-  { name: "Waxplorer", url: "https://waxplorer.io", description: "Data and visualization hub for WAX blocks and token movement.", category: "Explorer" },
+const categories = ["All", "Marketplace", "DeFi", "Gaming", "Explorer", "Directory"];
+const featured = [
+  ...SUPPORTED_DAPPS.map((dapp) => ({ ...dapp, category: "Gaming" })),
+  { name: "AtomicHub", url: "https://wax.atomichub.io", description: "NFT marketplace and collection explorer.", category: "Marketplace" },
+  { name: "Alcor Exchange", url: "https://alcor.exchange", description: "WAX token market and exchange interface.", category: "DeFi" },
+  { name: "WAXBlock", url: "https://waxblock.io", description: "Blocks, transactions, accounts, and tokens.", category: "Explorer" },
 ];
 
 export function ExplorerScreen() {
-  return (
-    <Stack spacing={3}>
-      <Card>
-        <CardContent>
-          <Typography variant="h4">WAX dApp explorer</Typography>
-          <Typography color="text.secondary" sx={{ mt: 1 }}>
-            Discover WAX ecosystem apps, block explorers, marketplaces, and analytics surfaces before connecting.
-          </Typography>
-        </CardContent>
-      </Card>
-
-      <Alert severity="info">
-        Use explorer pages for verification only. Always confirm the exact origin, account, and transaction details before approving a connection or signing.
-      </Alert>
-
-      <Grid container spacing={2}>
-        {explorers.map((item) => (
-          <Grid item xs={12} md={6} key={item.name}>
-            <Card sx={{ height: "100%" }}>
-              <CardContent>
-                <Stack spacing={1.5}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="h6">{item.name}</Typography>
-                    <Chip label={item.category} size="small" color="primary" variant="outlined" />
-                  </Stack>
-                  <Typography variant="body2" color="text.secondary">{item.description}</Typography>
-                  <Typography variant="caption" sx={{ wordBreak: "break-all" }} color="text.secondary">{item.url}</Typography>
-                  <Button component="a" href={item.url} target="_blank" rel="noopener noreferrer" variant="contained" endIcon={<OpenInNew />}>
-                    Open explorer
-                  </Button>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-    </Stack>
-  );
+  const [category, setCategory] = React.useState("All"); const [account, setAccount] = React.useState(""); const [network, setNetwork] = React.useState<any>(null); const [accountInfo, setAccountInfo] = React.useState<any>(null); const [error, setError] = React.useState(""); const [loading, setLoading] = React.useState(false);
+  const loadNetwork = async () => { try { setLoading(true); setError(""); setNetwork(await getWaxNetworkSnapshot()); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setLoading(false); } };
+  const inspect = async () => { try { setLoading(true); setError(""); setAccountInfo(await getWaxAccountSummary(account)); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setLoading(false); } };
+  const visible = category === "All" ? featured : featured.filter((item) => item.category === category);
+  return <Stack spacing={3}><Card><CardContent><Stack spacing={2}><Typography variant="h4">WAX explorer</Typography><Typography color="text.secondary">Live WAX network and account inspection, plus a curated dApp directory. External sites open in a new tab and never receive approval automatically.</Typography><Stack direction={{ xs: "column", sm: "row" }} spacing={1}><Button variant="contained" startIcon={<Refresh />} onClick={loadNetwork}>{loading ? <CircularProgress size={18} /> : "Check live network"}</Button><TextField size="small" label="Inspect WAX account" value={account} onChange={(e) => setAccount(e.target.value)} /><Button variant="outlined" onClick={inspect} disabled={!account || loading}>Inspect</Button></Stack>{network && <Stack direction="row" spacing={1} flexWrap="wrap"><Chip label={`Block ${network.headBlock}`} /><Chip label={`LIB ${network.lastIrreversibleBlock}`} /><Chip label={`Chain ${network.chainId.slice(0, 10)}…`} /><Button component="a" href={waxBlockUrl(network.headBlock)} target="_blank" rel="noopener noreferrer" endIcon={<OpenInNew />}>View block</Button></Stack>}{accountInfo && <Card variant="outlined"><CardContent><Typography variant="h6">{accountInfo.account_name}</Typography><Typography color="text.secondary">RAM {accountInfo.ram_usage} / {accountInfo.ram_quota} bytes · {accountInfo.permissions?.length ?? 0} permissions</Typography><Button component="a" href={waxAccountUrl(accountInfo.account_name)} target="_blank" rel="noopener noreferrer">Open account explorer</Button></CardContent></Card>}{error && <Alert severity="error">{error}</Alert>}</Stack></CardContent></Card><Card><CardContent><Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={2}><BoxTitle /><Select size="small" value={category} onChange={(e) => setCategory(String(e.target.value))}>{categories.map((item) => <MenuItem key={item} value={item}>{item}</MenuItem>)}</Select></Stack></CardContent></Card><Grid container spacing={2}>{visible.map((item) => <Grid item xs={12} md={6} key={item.name}><Card sx={{ height: "100%" }}><CardContent><Stack spacing={1.5}><Stack direction="row" justifyContent="space-between"><Typography variant="h6">{item.name}</Typography><Chip label={item.category} size="small" color="primary" variant="outlined" /></Stack><Typography color="text.secondary">{item.description}</Typography><Typography variant="caption" sx={{ wordBreak: "break-all" }}>{item.url}</Typography><Button component="a" href={item.url} target="_blank" rel="noopener noreferrer" variant="contained" endIcon={<OpenInNew />}>Open dApp</Button></Stack></CardContent></Card></Grid>)}</Grid></Stack>;
 }
+function BoxTitle() { return <Stack><Typography variant="h5">Featured WAX dApps</Typography><Typography color="text.secondary">Curated links require independent verification before use.</Typography></Stack>; }
