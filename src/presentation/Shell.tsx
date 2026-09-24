@@ -1,0 +1,2 @@
+import React from "react";import {Link,Outlet} from "react-router-dom";import {Box,Button,Stack,Typography} from "@mui/material";
+export function Shell(){return <Box sx={{maxWidth:1200,mx:"auto",p:3}}><Stack direction="row" spacing={2} alignItems="center" sx={{mb:3}}><Typography variant="h4" sx={{mr:"auto"}}>WAX Vault</Typography><Button component={Link} to="/">Dashboard</Button><Button component={Link} to="/send">Send</Button><Button component={Link} to="/assets">Assets</Button><Button component={Link} to="/recovery">Recovery</Button></Stack><Outlet/></Box>}

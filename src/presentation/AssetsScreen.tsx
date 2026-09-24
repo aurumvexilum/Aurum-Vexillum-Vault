@@ -1,0 +1,2 @@
+import React from "react";import {Card,CardContent,Typography} from "@mui/material";import {useDashboardStore} from "../application/dashboard-store";
+export function AssetsScreen(){const s=useDashboardStore();return <Card><CardContent><Typography variant="h5">Assets</Typography><Typography>{s.balances.map(x=>`${x.symbol}: ${x.balance}`).join(" · ")||"Refresh the dashboard to load balances."}</Typography><Typography sx={{mt:2}}>NFT gallery: {s.nfts.length} assets</Typography></CardContent></Card>}

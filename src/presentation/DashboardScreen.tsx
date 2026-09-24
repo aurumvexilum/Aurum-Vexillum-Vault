@@ -1,0 +1,2 @@
+import React from "react";import {Card,CardContent,Typography} from "@mui/material";import {useDashboardStore} from "../application/dashboard-store";
+export function DashboardScreen(){const state=useDashboardStore();return <Card><CardContent><Typography variant="h5">Dashboard</Typography><Typography>Account: {state.account||"Not selected"}</Typography><Typography>Tokens: {state.balances.length} · NFTs: {state.nfts.length} · Activity: {state.history.length}</Typography></CardContent></Card>}

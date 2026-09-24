@@ -1,0 +1,4 @@
+export type AccountPermission={perm_name:string;required_auth:{keys?:{key:string;weight:number}[];accounts?:unknown[]}};
+export type WaxAccount={account_name:string;permissions?:AccountPermission[];head_block_num:number};
+export function accountHasPublicKey(account:WaxAccount,publicKey:string,permission="active"){const selected=account.permissions?.find(x=>x.perm_name===permission);return Boolean(selected?.required_auth.keys?.some(x=>x.key===publicKey))}
+export function verifyImportedAccount(account:WaxAccount,publicKey:string,permission="active"){if(!account.account_name)throw new Error("The WAX account response is invalid.");if(!accountHasPublicKey(account,publicKey,permission))throw new Error(`The ${permission} permission does not contain the imported public key.`);return{account:account.account_name,permission,publicKey}}

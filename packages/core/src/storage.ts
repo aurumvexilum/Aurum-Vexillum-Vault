@@ -1,0 +1,3 @@
+export interface SecretStorage<T>{save(value:T,password:string):Promise<void>;load(password:string):Promise<T>;exists():Promise<boolean>;export():Promise<string>;import(serialized:string):Promise<void>}
+export interface KeyStorage{saveEncrypted(value:string,password:string):Promise<void>;loadDecrypted(password:string):Promise<string>;clear():Promise<void>}
+export class VaultService<T>{constructor(private readonly storage:SecretStorage<T>){ }save(v:T,password:string){return this.storage.save(v,password)}load(password:string){return this.storage.load(password)}exists(){return this.storage.exists()}export(){return this.storage.export()}import(value:string){return this.storage.import(value)}}

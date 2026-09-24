@@ -1,9 +1,9 @@
 {
   "name":"wax-wallet",
   "private":true,
-  "version":"0.3.0",
+  "version":"0.4.0",
   "type":"module",
-  "scripts":{"dev":"vite","build":"tsc -b && vite build","preview":"vite preview","mobile:sync":"npx cap sync","mobile:android":"npx cap open android","mobile:ios":"npx cap open ios"},
-  "dependencies":{"@emotion/react":"^11.13.3","@emotion/styled":"^11.13.0","@mui/icons-material":"^6.1.0","@mui/material":"^6.1.0","@scure/bip39":"^1.4.0","@capacitor/core":"^6.1.2","eosjs":"^22.1.0","js-sha256":"^0.11.1","qrcode.react":"^4.1.0","react":"^18.3.1","react-dom":"^18.3.1","zustand":"^5.0.0"},
-  "devDependencies":{"@capacitor/cli":"^6.1.2","@capacitor/android":"^6.1.2","@capacitor/ios":"^6.1.2","@types/react":"^18.3.5","@types/react-dom":"^18.3.0","@vitejs/plugin-react":"^4.3.1","typescript":"^5.5.4","vite":"^5.4.8"}
+  "scripts":{"dev":"vite","build":"tsc -b && vite build","preview":"vite preview","test":"vitest run","test:watch":"vitest","mobile:sync":"npm run build && npx cap sync","mobile:android":"npx cap open android","mobile:ios":"npx cap open ios"},
+  "dependencies":{"@emotion/react":"^11.13.3","@emotion/styled":"^11.13.0","@mui/icons-material":"^6.1.0","@mui/material":"^6.1.0","@scure/bip39":"^1.4.0","@capacitor/core":"^6.1.2","eosjs":"^22.1.0","js-sha256":"^0.11.1","qrcode.react":"^4.1.0","react":"^18.3.1","react-dom":"^18.3.1","react-router-dom":"^7.1.1","zustand":"^5.0.0"},
+  "devDependencies":{"@capacitor/cli":"^6.1.2","@capacitor/android":"^6.1.2","@capacitor/ios":"^6.1.2","@types/react":"^18.3.5","@types/react-dom":"^18.3.0","@vitejs/plugin-react":"^4.3.1","typescript":"^5.5.4","vite":"^5.4.8","vitest":"^2.1.8"}
 }

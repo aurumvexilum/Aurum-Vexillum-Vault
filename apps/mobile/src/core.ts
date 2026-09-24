@@ -1,0 +1,4 @@
+import {RpcBroker} from "../../src/infrastructure/rpc-broker";
+export const mobileRpc=new RpcBroker(["https://wax.greymass.com","https://wax.eosusa.io","https://wax.eosn.io"]);
+export interface NativeVaultAdapter{save(value:string,password:string):Promise<void>;load(password:string):Promise<string>;clear():Promise<void>}
+export class KeychainVaultAdapter implements NativeVaultAdapter{constructor(private readonly keychain:any){}async save(value:string,password:string){await this.keychain.setGenericPassword("wax-vault",JSON.stringify({value,password}),{accessible:this.keychain.ACCESSIBLE?.WHEN_UNLOCKED_THIS_DEVICE_ONLY})}async load(password:string){const result=await this.keychain.getGenericPassword();if(!result)throw new Error("No native vault found.");const data=JSON.parse(result.password);if(data.password!==password)throw new Error("Incorrect passphrase.");return data.value}async clear(){await this.keychain.resetGenericPassword()}}
