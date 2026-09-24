@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Aurum Vexillum Vault emblem</title>
+  <desc id="desc">A circular gold and black mechanical vault emblem with a central stylized vault door.</desc>
+  <defs>
+    <radialGradient id="gold" cx="38%" cy="28%" r="78%">
+      <stop offset="0" stop-color="#fff0a6"/>
+      <stop offset=".42" stop-color="#f7d774"/>
+      <stop offset=".78" stop-color="#d4af37"/>
+      <stop offset="1" stop-color="#b8860b"/>
+    </radialGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d8dfb4"/>
+      <stop offset=".5" stop-color="#87926b"/>
+      <stop offset="1" stop-color="#3f493b"/>
+    </linearGradient>
+    <filter id="shadow" x="-.2" y="-.2" width="1.4" height="1.4">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000" flood-opacity=".42"/>
+    </filter>
+  </defs>
+  <circle cx="512" cy="512" r="480" fill="#050505"/>
+  <circle cx="512" cy="512" r="466" fill="none" stroke="url(#gold)" stroke-width="24"/>
+  <circle cx="512" cy="512" r="428" fill="none" stroke="#17130a" stroke-width="14"/>
+  <circle cx="512" cy="512" r="398" fill="none" stroke="url(#gold)" stroke-width="10"/>
+  <circle cx="512" cy="512" r="366" fill="#17130a" stroke="#d4af37" stroke-width="8"/>
+
+  <g fill="none" stroke="#d4af37" stroke-width="12" stroke-linecap="round" opacity=".92">
+    <circle cx="512" cy="512" r="240"/>
+    <path d="M512 272v92M512 660v92M272 512h92M660 512h92"/>
+    <path d="m342 342 66 66M616 616l66 66M682 342l-66 66M408 616l-66 66"/>
+    <path d="M512 322a190 190 0 1 0 0 380 190 190 0 0 0 0-380Z" stroke-dasharray="22 20"/>
+  </g>
+
+  <g fill="url(#metal)" stroke="#d4af37" stroke-width="8" filter="url(#shadow)">
+    <circle cx="512" cy="111" r="26"/>
+    <circle cx="512" cy="913" r="26"/>
+    <circle cx="512" cy="111" r="10" fill="#f7f4ea"/>
+    <circle cx="512" cy="913" r="10" fill="#f7f4ea"/>
+  </g>
+
+  <g fill="url(#gold)" stroke="#17130a" stroke-width="12" stroke-linejoin="round" filter="url(#shadow)">
+    <path d="M401 253h223l77 77v366l-77 77H401l-77-77V330l77-77Z"/>
+    <path d="M438 292h130l54 54v324l-54 54H438l-54-54V346l54-54Z" fill="#0b0b09"/>
+    <path d="M465 325h88l31 31v258l-31 31h-88l-31-31V356l31-31Z" fill="url(#metal)"/>
+    <path d="M465 325h24v320h-24zM553 325h20v320h-20z" fill="#d4af37"/>
+    <path d="M584 392h32v184h-32z" fill="#f7d774"/>
+    <path d="m365 420 55-55v294l-55-55z" fill="#b8860b"/>
+    <path d="m659 365 55 55v184l-55 55z" fill="#b8860b"/>
+  </g>
+
+  <g fill="#d4af37" stroke="#17130a" stroke-width="8">
+    <circle cx="512" cy="512" r="32"/>
+    <circle cx="512" cy="512" r="12" fill="#17130a"/>
+    <path d="m512 465 12 29 31 3-24 20 8 31-27-17-27 17 8-31-24-20 31-3z"/>
+  </g>
+
+  <g fill="none" stroke="#d4af37" stroke-width="9" stroke-linecap="round">
+    <path d="M191 596c18 62 51 113 99 153"/>
+    <path d="M833 596c-18 62-51 113-99 153"/>
+    <path d="M192 428c16-61 49-114 98-155"/>
+    <path d="M832 428c-16-61-49-114-98-155"/>
+  </g>
+</svg>
