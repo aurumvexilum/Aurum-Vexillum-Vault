@@ -1,33 +1,309 @@
 import React from "react";
-import { Alert, Button, Card, CardContent, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Grid, LinearProgress, Stack, TextField, Typography } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  LinearProgress,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { Link } from "react-router-dom";
-import { buildBuyRamAction, buildDelegateBandwidthAction, estimateRamBytes, getWaxRamMarket, getWaxResourceAccount, normalizeWax, parseWax, WaxResourceAccount } from "../infrastructure/wax-resource-service";
+import {
+  buildBuyRamAction,
+  buildDelegateBandwidthAction,
+  estimateRamBytes,
+  getWaxRamMarket,
+  getWaxResourceAccount,
+  parseWax,
+  WaxResourceAccount,
+} from "../infrastructure/wax-resource-service";
 import { useDashboardStore } from "../application/dashboard-store-v2";
 
-const pct = (used = 0, max = 0) => max > 0 ? Math.min(100, (used / max) * 100) : 0;
-const healthFor = (cpu: any, net: any, ramUsed: number, ramMax: number) => { const values = [cpu ? pct(cpu.used, cpu.max) : 0, net ? pct(net.used, net.max) : 0, pct(ramUsed, ramMax)]; const highest = Math.max(...values); return highest >= 95 ? "Critical" : highest >= 75 ? "Warning" : "Healthy"; };
-const tone = (value: string) => value === "Critical" ? "error" : value === "Warning" ? "warning" : "success";
-const amount = (weight?: string) => Number(String(weight || "0").split(" ")[0]) || 0;
+type Health = "Healthy" | "Warning" | "Critical";
+type ActionType = "stake" | "ram";
+
+const usedPercent = (used = 0, max = 0) => (max > 0 ? Math.min(100, (used / max) * 100) : 0);
+const waxValue = (value?: string) => Number(String(value || "0").split(" ")[0]) || 0;
+const healthColor = (health: Health) => (health === "Critical" ? "error" : health === "Warning" ? "warning" : "success");
+
+function healthFor(info: WaxResourceAccount): Health {
+  const highest = Math.max(
+    usedPercent(info.cpu_limit?.used, info.cpu_limit?.max),
+    usedPercent(info.net_limit?.used, info.net_limit?.max),
+    usedPercent(info.ram_usage, info.ram_quota),
+  );
+  return highest >= 95 ? "Critical" : highest >= 75 ? "Warning" : "Healthy";
+}
+
+function ResourceCard({ title, value, detail, percent }: { title: string; value: string; detail: string; percent?: number }) {
+  const progress = percent ?? 0;
+  return (
+    <Card sx={{ height: "100%" }}>
+      <CardContent>
+        <Stack spacing={1.5}>
+          <Typography variant="h6">{title}</Typography>
+          <Typography variant="h5">{value}</Typography>
+          <Typography variant="body2" color="text.secondary">{detail}</Typography>
+          {percent != null && (
+            <LinearProgress
+              variant="determinate"
+              value={progress}
+              color={progress >= 95 ? "error" : progress >= 75 ? "warning" : "success"}
+              sx={{ height: 8, borderRadius: 4 }}
+            />
+          )}
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+}
 
 export function ResourcesScreen() {
   const { account, balances, history } = useDashboardStore();
-  const [info, setInfo] = React.useState<WaxResourceAccount | null>(null); const [market, setMarket] = React.useState<any>(null); const [cpu, setCpu] = React.useState(""); const [net, setNet] = React.useState(""); const [ram, setRam] = React.useState(""); const [receiver, setReceiver] = React.useState(""); const [confirm, setConfirm] = React.useState(""); const [dialog, setDialog] = React.useState<"stake" | "ram" | null>(null); const [preview, setPreview] = React.useState<any>(null); const [loading, setLoading] = React.useState(false); const [error, setError] = React.useState(""); const [status, setStatus] = React.useState("");
-  const load = React.useCallback(async () => { if (!account) return; try { setLoading(true); setError(""); const [next, nextMarket] = await Promise.all([getWaxResourceAccount(account), getWaxRamMarket()]); setInfo(next); setMarket(nextMarket); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setLoading(false); } }, [account]);
-  React.useEffect(() => { void load(); const id = window.setInterval(() => void load(), 30000); return () => window.clearInterval(id); }, [load]);
-  const target = receiver.trim() || account || ""; const projected = market && ram ? (() => { try { return estimateRamBytes(market, ram); } catch { return null; } })() : null; const health = info ? healthFor(info.cpu_limit, info.net_limit, info.ram_usage, info.ram_quota) : "Healthy"; const liquid = balances.find((x: any) => x.symbol === "WAX"); const liquidWax = amount(liquid?.balance); const stakedWax = amount(info?.total_resources?.cpu_weight) + amount(info?.total_resources?.net_weight);
-  const openStake = () => { try { setError(""); const action = buildDelegateBandwidthAction(account, target, cpu, net); setPreview(action); setConfirm(""); setDialog("stake"); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } };
-  const openRam = () => { try { setError(""); const action = buildBuyRamAction(account, target, ram); setPreview(action); setConfirm(""); setDialog("ram"); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } };
-  const approve = () => { if (confirm.trim() !== "I CONFIRM") { setError("Type I CONFIRM to approve this resource action."); return; } setStatus(`Approved ${preview.name}. The action is ready for your configured signer.`); setDialog(null); setPreview(null); setConfirm(""); void load(); };
-  const quick = (kind: string) => { if (!info) return; if (kind === "cpu") { setCpu(Math.max(0, Number(info.cpu_limit?.available || 0) / 1000).toFixed(8)); setNet(""); } else if (kind === "net") { setNet(Math.max(0, Number(info.net_limit?.available || 0) / 1000).toFixed(8)); setCpu(""); } else if (kind === "ram") setRam("1.00000000"); else { setCpu("0.50000000"); setNet("0.50000000"); } };
-  const resourceHistory = history.filter((item: any) => ["delegatebw", "undelegatebw", "buyram", "buyrambytes"].includes(item.act?.name)).slice(0, 8);
+  const [info, setInfo] = React.useState<WaxResourceAccount | null>(null);
+  const [market, setMarket] = React.useState<any>(null);
+  const [cpu, setCpu] = React.useState("");
+  const [net, setNet] = React.useState("");
+  const [ram, setRam] = React.useState("");
+  const [receiver, setReceiver] = React.useState("");
+  const [confirmation, setConfirmation] = React.useState("");
+  const [actionType, setActionType] = React.useState<ActionType | null>(null);
+  const [preview, setPreview] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const [status, setStatus] = React.useState("");
 
-  return <Stack spacing={3}><Card><CardContent><Stack spacing={2}><Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={2}><Box><Typography variant="h4">WAX resources</Typography><Typography color="text.secondary">CPU and NET are bandwidth stakes; RAM is persistent account storage. Neither replaces your liquid token balance.</Typography></Box><Chip color={tone(health) as any} label={health} /></Stack><Stack direction="row" spacing={1} flexWrap="wrap"><Chip label={`Account: ${account || "Not selected"}`} /><Button component={Link} to="/recovery" size="small">Verify account</Button><Button onClick={() => void load()} disabled={!account || loading}>{loading ? <CircularProgress size={16} /> : "Refresh totals"}</Button></Stack></Stack></CardContent></Card>
-    {!account && <Alert severity="info">Verify an account before preparing resource actions.</Alert>}{error && <Alert severity="error">{error}</Alert>}{status && <Alert severity="success">{status}</Alert>}
-    {info && <><Alert severity={tone(health) as any}>{health === "Critical" ? "A resource is nearly exhausted. Transactions may fail; add resources before signing." : health === "Warning" ? "Resource capacity is getting low. Consider staking CPU/NET or buying RAM." : "CPU, NET, and RAM are within healthy ranges."}</Alert><Grid container spacing={2}><Grid item xs={12} md={3}><Summary title="RAM" value={`${info.ram_usage.toLocaleString()} / ${info.ram_quota.toLocaleString()} bytes`} detail={`${(info.ram_quota - info.ram_usage).toLocaleString()} available`} used={pct(info.ram_usage, info.ram_quota)} /></Grid><Grid item xs={12} md={3}><Summary title="CPU" value={info.cpu_limit ? `${info.cpu_limit.available.toLocaleString()} / ${info.cpu_limit.max.toLocaleString()}` : "—"} detail="available / max" used={pct(info.cpu_limit?.used, info.cpu_limit?.max)} /></Grid><Grid item xs={12} md={3}><Summary title="NET" value={info.net_limit ? `${info.net_limit.available.toLocaleString()} / ${info.net_limit.max.toLocaleString()}` : "—"} detail="available / max" used={pct(info.net_limit?.used, info.net_limit?.max)} /></Grid><Grid item xs={12} md={3}><Summary title="Account totals" value={`${stakedWax.toFixed(4)} WAX staked`} detail={`${liquidWax.toFixed(4)} WAX liquid`} /></Grid></Grid></>}
-    <Card><CardContent><Stack spacing={2}><Typography variant="h6">Quick actions</Typography><Stack direction={{ xs: "column", sm: "row" }} spacing={1}><Button variant="outlined" onClick={() => quick("cpu")} disabled={!info}>Stake max CPU</Button><Button variant="outlined" onClick={() => quick("net")} disabled={!info}>Stake max NET</Button><Button variant="outlined" onClick={() => quick("ram")}>Buy small RAM</Button><Button variant="outlined" onClick={() => quick("rebalance")} disabled={!info}>Rebalance resources</Button></Stack></Stack></CardContent></Card>
-    <Grid container spacing={2}><Grid item xs={12} md={6}><Card><CardContent><Stack spacing={2}><Typography variant="h6">Stake CPU / NET</Typography><TextField label="Receiver account" value={receiver} onChange={(e) => setReceiver(e.target.value)} placeholder={account || "wax account"} /><TextField label="CPU WAX" value={cpu} onChange={(e) => setCpu(e.target.value)} inputMode="decimal" /><TextField label="NET WAX" value={net} onChange={(e) => setNet(e.target.value)} inputMode="decimal" /><Button variant="contained" onClick={openStake} disabled={!account}>Review stake</Button><Typography variant="body2" color="text.secondary">Staking grants transaction bandwidth and does not transfer WAX to another account unless transfer mode is selected.</Typography></Stack></CardContent></Card></Grid><Grid item xs={12} md={6}><Card><CardContent><Stack spacing={2}><Typography variant="h6">Purchase RAM</Typography><TextField label="Receiver account" value={receiver} onChange={(e) => setReceiver(e.target.value)} placeholder={account || "wax account"} /><TextField label="WAX to spend" value={ram} onChange={(e) => setRam(e.target.value)} inputMode="decimal" /><Typography color="text.secondary">Estimated bytes: {projected == null ? "—" : projected.toLocaleString()}</Typography><Button variant="contained" onClick={openRam} disabled={!account}>Review RAM purchase</Button><Typography variant="body2" color="text.secondary">RAM is persistent account storage purchased from the live RAM market.</Typography></Stack></CardContent></Card></Grid></Grid>
-    <Card><CardContent><Stack spacing={2}><Typography variant="h6">Resource history</Typography>{resourceHistory.length ? resourceHistory.map((item: any, i: number) => <Stack key={i} direction="row" justifyContent="space-between" sx={{ borderBottom: 1, borderColor: "divider", pb: 1 }}><Typography>{item.act.name}</Typography><Typography variant="caption" color="text.secondary">{item.block_time || item.timestamp || "recent"}</Typography></Stack>) : <Typography color="text.secondary">No resource changes found in recent account history.</Typography>}</Stack></CardContent></Card>
-    <Dialog open={Boolean(dialog)} onClose={() => setDialog(null)} maxWidth="sm" fullWidth><DialogTitle>Transaction preview</DialogTitle><DialogContent><Stack spacing={1.5} sx={{ pt: 1 }}><Typography>Network: <strong>WAX mainnet</strong></Typography><Typography>Action: <strong>{preview?.name}</strong></Typography><Typography>Source: <strong>eosio</strong></Typography><Typography>Payer / sender: <strong>{account}</strong></Typography><Typography>Receiver: <strong>{target}</strong></Typography><Box component="pre" sx={{ p: 1.5, overflow: "auto", bgcolor: "action.hover", borderRadius: 1, fontSize: 12 }}>{JSON.stringify(preview, null, 2)}</Box><TextField label="Type I CONFIRM to approve" value={confirm} onChange={(e) => setConfirm(e.target.value)} /><Alert severity="warning">Review the exact action JSON before handing it to your signing provider.</Alert></Stack></DialogContent><DialogActions><Button onClick={() => setDialog(null)}>Cancel</Button><Button variant="contained" onClick={approve}>Approve for signing</Button></DialogActions></Dialog>
-  </Stack>;
+  const load = React.useCallback(async () => {
+    if (!account) return;
+    try {
+      setLoading(true);
+      setError("");
+      const [nextInfo, nextMarket] = await Promise.all([getWaxResourceAccount(account), getWaxRamMarket()]);
+      setInfo(nextInfo);
+      setMarket(nextMarket);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [account]);
+
+  React.useEffect(() => {
+    void load();
+    const timer = window.setInterval(() => void load(), 30_000);
+    return () => window.clearInterval(timer);
+  }, [load]);
+
+  const target = receiver.trim() || account || "";
+  const health = info ? healthFor(info) : "Healthy";
+  const ramEstimate = market && ram ? (() => {
+    try { return estimateRamBytes(market, ram); } catch { return null; }
+  })() : null;
+  const liquidWax = waxValue(balances.find((token: any) => token.symbol === "WAX")?.balance);
+  const stakedWax = waxValue(info?.total_resources?.cpu_weight) + waxValue(info?.total_resources?.net_weight);
+  const resourceHistory = history
+    .filter((item: any) => ["delegatebw", "undelegatebw", "buyram", "buyrambytes"].includes(item.act?.name))
+    .slice(0, 8);
+
+  const openStakePreview = () => {
+    try {
+      if (!account) throw new Error("Verify an account before staking.");
+      const action = buildDelegateBandwidthAction(account, target, cpu, net);
+      setPreview(action);
+      setConfirmation("");
+      setError("");
+      setActionType("stake");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const openRamPreview = () => {
+    try {
+      if (!account) throw new Error("Verify an account before buying RAM.");
+      const action = buildBuyRamAction(account, target, ram);
+      setPreview(action);
+      setConfirmation("");
+      setError("");
+      setActionType("ram");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const approve = () => {
+    if (confirmation.trim() !== "I CONFIRM") {
+      setError("Type I CONFIRM to approve this resource action.");
+      return;
+    }
+    setStatus(`Approved ${preview.name}. The action is ready for the configured signing provider.`);
+    setActionType(null);
+    setPreview(null);
+    setConfirmation("");
+    void load();
+  };
+
+  const quickAction = (kind: "cpu" | "net" | "ram" | "rebalance") => {
+    if (!info) return;
+    if (kind === "cpu") {
+      setCpu(Math.max(0, Number(info.cpu_limit?.available || 0) / 1000).toFixed(8));
+      setNet("");
+    } else if (kind === "net") {
+      setNet(Math.max(0, Number(info.net_limit?.available || 0) / 1000).toFixed(8));
+      setCpu("");
+    } else if (kind === "ram") {
+      setRam("1.00000000");
+    } else {
+      setCpu("0.50000000");
+      setNet("0.50000000");
+    }
+  };
+
+  return (
+    <Stack spacing={3}>
+      <Card>
+        <CardContent>
+          <Stack spacing={2}>
+            <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={2}>
+              <Box>
+                <Typography variant="h4">WAX resources</Typography>
+                <Typography color="text.secondary">
+                  CPU and NET provide transaction bandwidth. RAM provides persistent account storage.
+                </Typography>
+              </Box>
+              <Chip color={healthColor(health) as any} label={health} sx={{ alignSelf: { xs: "flex-start", sm: "center" } }} />
+            </Stack>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              <Chip label={`Account: ${account || "Not selected"}`} />
+              <Button component={Link} to="/recovery" size="small">Verify account</Button>
+              <Button onClick={() => void load()} disabled={!account || loading}>
+                {loading ? <CircularProgress size={16} /> : "Refresh totals"}
+              </Button>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      {!account && <Alert severity="info">Verify an account before viewing totals or preparing resource actions.</Alert>}
+      {error && <Alert severity="error">{error}</Alert>}
+      {status && <Alert severity="success">{status}</Alert>}
+
+      {info && (
+        <>
+          <Alert severity={healthColor(health) as any}>
+            {health === "Critical"
+              ? "A resource is nearly exhausted. Transactions may fail; add resources before signing."
+              : health === "Warning"
+                ? "Resource capacity is getting low. Consider staking CPU/NET or buying RAM."
+                : "CPU, NET, and RAM are within healthy ranges."}
+          </Alert>
+
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={3}>
+              <ResourceCard title="RAM" value={`${info.ram_usage.toLocaleString()} / ${info.ram_quota.toLocaleString()} bytes`} detail={`${Math.max(0, info.ram_quota - info.ram_usage).toLocaleString()} available`} percent={usedPercent(info.ram_usage, info.ram_quota)} />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <ResourceCard title="CPU" value={info.cpu_limit ? `${info.cpu_limit.available.toLocaleString()} / ${info.cpu_limit.max.toLocaleString()}` : "—"} detail="available / max" percent={usedPercent(info.cpu_limit?.used, info.cpu_limit?.max)} />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <ResourceCard title="NET" value={info.net_limit ? `${info.net_limit.available.toLocaleString()} / ${info.net_limit.max.toLocaleString()}` : "—"} detail="available / max" percent={usedPercent(info.net_limit?.used, info.net_limit?.max)} />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <ResourceCard title="Account totals" value={`${stakedWax.toFixed(4)} WAX staked`} detail={`${liquidWax.toFixed(4)} WAX liquid`} />
+            </Grid>
+          </Grid>
+        </>
+      )}
+
+      <Card>
+        <CardContent>
+          <Stack spacing={2}>
+            <Typography variant="h6">Quick actions</Typography>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+              <Button variant="outlined" onClick={() => quickAction("cpu")} disabled={!info}>Stake max CPU</Button>
+              <Button variant="outlined" onClick={() => quickAction("net")} disabled={!info}>Stake max NET</Button>
+              <Button variant="outlined" onClick={() => quickAction("ram")}>Buy small RAM</Button>
+              <Button variant="outlined" onClick={() => quickAction("rebalance")} disabled={!info}>Rebalance resources</Button>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={6}>
+          <Card sx={{ height: "100%" }}>
+            <CardContent>
+              <Stack spacing={2}>
+                <Typography variant="h6">Stake CPU / NET</Typography>
+                <TextField label="Receiver account" value={receiver} onChange={(e) => setReceiver(e.target.value)} placeholder={account || "wax account"} />
+                <TextField label="CPU WAX" value={cpu} onChange={(e) => setCpu(e.target.value)} inputMode="decimal" />
+                <TextField label="NET WAX" value={net} onChange={(e) => setNet(e.target.value)} inputMode="decimal" />
+                <Button variant="contained" onClick={openStakePreview} disabled={!account}>Review stake</Button>
+                <Typography variant="body2" color="text.secondary">Staking affects bandwidth and is separate from your liquid WAX balance.</Typography>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Card sx={{ height: "100%" }}>
+            <CardContent>
+              <Stack spacing={2}>
+                <Typography variant="h6">Purchase RAM</Typography>
+                <TextField label="Receiver account" value={receiver} onChange={(e) => setReceiver(e.target.value)} placeholder={account || "wax account"} />
+                <TextField label="WAX to spend" value={ram} onChange={(e) => setRam(e.target.value)} inputMode="decimal" />
+                <Typography color="text.secondary">Estimated bytes: {ramEstimate == null ? "—" : ramEstimate.toLocaleString()}</Typography>
+                <Button variant="contained" onClick={openRamPreview} disabled={!account}>Review RAM purchase</Button>
+                <Typography variant="body2" color="text.secondary">RAM is persistent storage purchased from the live RAM market.</Typography>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      <Card>
+        <CardContent>
+          <Stack spacing={2}>
+            <Typography variant="h6">Resource history</Typography>
+            {resourceHistory.length ? resourceHistory.map((item: any, index: number) => (
+              <Stack key={index} direction="row" justifyContent="space-between" sx={{ borderBottom: 1, borderColor: "divider", pb: 1 }}>
+                <Typography>{item.act?.name || "resource action"}</Typography>
+                <Typography variant="caption" color="text.secondary">{item.block_time || item.timestamp || "recent"}</Typography>
+              </Stack>
+            )) : <Typography color="text.secondary">No resource changes found in recent account history.</Typography>}
+          </Stack>
+        </CardContent>
+      </Card>
+
+      <Dialog open={Boolean(actionType)} onClose={() => setActionType(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>Transaction preview</DialogTitle>
+        <DialogContent>
+          <Stack spacing={1.5} sx={{ pt: 1 }}>
+            <Typography>Network: <strong>WAX mainnet</strong></Typography>
+            <Typography>Action: <strong>{preview?.name}</strong></Typography>
+            <Typography>Source: <strong>eosio</strong></Typography>
+            <Typography>Payer / sender: <strong>{account}</strong></Typography>
+            <Typography>Receiver: <strong>{target}</strong></Typography>
+            <Box component="pre" sx={{ p: 1.5, overflow: "auto", bgcolor: "action.hover", borderRadius: 1, fontSize: 12 }}>{JSON.stringify(preview, null, 2)}</Box>
+            <TextField label="Type I CONFIRM to approve" value={confirmation} onChange={(e) => setConfirmation(e.target.value)} />
+            <Alert severity="warning">Review the exact action JSON before sending it to your signing provider.</Alert>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setActionType(null)}>Cancel</Button>
+          <Button variant="contained" onClick={approve}>Approve for signing</Button>
+        </DialogActions>
+      </Dialog>
+    </Stack>
+  );
 }
-function Summary({ title, value, detail, used }: { title: string; value: string; detail: string; used?: number }) { return <Card><CardContent><Typography variant="h6">{title}</Typography><Typography variant="h6" sx={{ mt: 1 }}>{value}</Typography><Typography variant="body2" color="text.secondary">{detail}</Typography>{used != null && <LinearProgress variant="determinate" value={used} color={used >= 95 ? "error" : used >= 75 ? "warning" : "success"} sx={{ mt: 2, height: 8, borderRadius: 4 }} />}</CardContent></Card>; }
