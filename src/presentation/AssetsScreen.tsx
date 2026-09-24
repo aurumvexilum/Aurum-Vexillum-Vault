@@ -1,18 +1,5 @@
 import React from "react";
-import { Card, CardContent, Chip, Stack, Typography } from "@mui/material";
+import { Alert, Button, Card, CardContent, Chip, Grid, Stack, Typography } from "@mui/material";
 import { useDashboardStore } from "../application/dashboard-store-v2";
-
-export function AssetsScreen() {
-  const { balances, nfts } = useDashboardStore();
-
-  return <Card>
-    <CardContent>
-      <Typography variant="h5">Assets</Typography>
-      <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap" }}>
-        {balances.length ? balances.map((token, index) => <Chip key={`${token.symbol}-${index}`} label={`${token.symbol}: ${token.balance}`} />) : <Typography color="text.secondary">No balances loaded yet.</Typography>}
-      </Stack>
-      <Typography variant="h6" sx={{ mt: 4 }}>NFT collection</Typography>
-      <Typography sx={{ mt: 1 }}>{nfts.length} collectibles</Typography>
-    </CardContent>
-  </Card>;
-}
+import { fetchLowestNftPrice } from "../infrastructure/nft-market-service";
+export function AssetsScreen(){const{balances,nfts}=useDashboardStore();const[prices,setPrices]=React.useState<Record<string,any>>({});const[error,setError]=React.useState("");async function price(id:string){try{setPrices(x=>({...x,[id]:await fetchLowestNftPrice(id)}))}catch(e){setError(e instanceof Error?e.message:String(e))}}return <Stack spacing={3}><Card><CardContent><Typography variant="h5">Assets</Typography><Stack direction="row" spacing={1} sx={{mt:2,flexWrap:"wrap"}}>{balances.length?balances.map((token,index)=><Chip key={`${token.symbol}-${index}`} label={`${token.symbol}: ${token.balance}`}/>:<Typography color="text.secondary">No balances loaded yet.</Typography>)}</Stack></CardContent></Card>{error&&<Alert severity="error">{error}</Alert>}<Typography variant="h5">NFT gallery</Typography><Grid container spacing={2}>{nfts.map((n:any)=><Grid item xs={12} sm={6} md={3} key={n.asset_id}><Card><CardContent><Typography variant="h6">#{n.asset_id}</Typography><Typography>{n.name||n.data?.name||"WAX NFT"}</Typography><Typography variant="body2" color="text.secondary">{n.collection?.collection_name||"Unknown collection"}</Typography>{prices[n.asset_id]?.lowestPrice!=null&&<Typography sx={{mt:1}}>Lowest: {prices[n.asset_id].lowestPrice} {prices[n.asset_id].symbol}</Typography>}<Button sx={{mt:1}} onClick={()=>price(n.asset_id)}>{prices[n.asset_id]?"Refresh price":"Show lowest price"}</Button></CardContent></Card></Grid>)}</Grid></Stack>}
