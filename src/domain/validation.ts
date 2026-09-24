@@ -1,0 +1,9 @@
+export type ValidationIssue={field:string;message:string};
+export type TransferDraft={from:string;to:string;amount:string;symbol:string;precision:number;memo:string};
+const NAME=/^[a-z1-5.]{1,12}$/;
+export function validateAccountName(value:string){if(!NAME.test(value))return "Account names must be 1–12 characters using a–z, 1–5, or period.";return null}
+export function validateMemo(value:string){if([...value].length>256)return "Memo must be 256 characters or fewer.";return null}
+export function validateAmount(value:string,precision:number){if(!new RegExp(`^\\d+(\\.\\d{1,${precision}})?$`).test(value)||Number(value)<=0)return `Enter a positive amount with up to ${precision} decimal places.`;if(!Number.isSafeInteger(Math.round(Number(value)*10**precision)))return "Amount is outside the supported numeric range.";return null}
+export function validateTransfer(draft:TransferDraft):ValidationIssue[]{const issues:ValidationIssue[]=[];for(const [field,value] of [["from",draft.from],["to",draft.to]] as const){const error=validateAccountName(value);if(error)issues.push({field,message:error})}const amount=validateAmount(draft.amount,draft.precision);if(amount)issues.push({field:"amount",message:amount});const memo=validateMemo(draft.memo);if(memo)issues.push({field:"memo",message:memo});if(draft.from===draft.to)issues.push({field:"to",message:"Sender and recipient must be different."});if(!draft.symbol)issues.push({field:"symbol",message:"A token symbol is required."});return issues}
+export function assertValidTransfer(draft:TransferDraft){const issues=validateTransfer(draft);if(issues.length)throw new Error(issues.map(x=>`${x.field}: ${x.message}`).join(" "))}
+export function validateRecoveryPhrase(words:string[]){if(words.length!==12&&words.length!==15&&words.length!==18&&words.length!==21&&words.length!==24)throw new Error("Recovery phrases must contain 12, 15, 18, 21, or 24 words.");return words.map(x=>x.trim().toLowerCase()).join(" ")}
