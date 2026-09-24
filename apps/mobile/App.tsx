@@ -1,5 +1,26 @@
 import React from "react";
-import { SafeAreaView, Text, View, Button, StyleSheet, useColorScheme } from "react-native";
-import { mobileRpc } from "./core";
-export default function App(){const scheme=useColorScheme();const [status,setStatus]=React.useState("Ready");return <SafeAreaView style={[styles.safe,{backgroundColor:scheme==="dark"?"#0b1020":"#f5f7fb"}]}><View style={styles.container}><Text style={[styles.title,{color:scheme==="dark"?"#fff":"#111827"}]}>WAX Vault</Text><Text style={[styles.subtitle,{color:scheme==="dark"?"#cbd5e1":"#475569"}]}>Native wallet powered by shared RPC, validation, recovery, and transaction services.</Text><Button title="Check network" onPress={async()=>{try{await mobileRpc.call(rpc=>rpc.get_info());setStatus("WAX network available")}catch{setStatus("All RPC endpoints unavailable")}}}/><Text style={styles.status}>{status}</Text></View></SafeAreaView>}
-const styles=StyleSheet.create({safe:{flex:1},container:{padding:24,gap:18},title:{fontSize:32,fontWeight:"800"},subtitle:{fontSize:16,lineHeight:24},status:{marginTop:16,fontSize:16}});
+import { SafeAreaView, View, Text, Button, useColorScheme, StyleSheet } from "react-native";
+import { rpcBroker } from "../../src/infrastructure/dapp-connector";
+
+export default function App() {
+  const scheme = useColorScheme();
+  const [status, setStatus] = React.useState("Ready");
+
+  return <SafeAreaView style={[styles.safe, { backgroundColor: scheme === "dark" ? "#0b1020" : "#f5f7fb" }]}>
+    <View style={styles.container}>
+      <Text style={[styles.title, { color: scheme === "dark" ? "#ffffff" : "#0f172a" }]}>WAX Vault Mobile</Text>
+      <Text style={[styles.text, { color: scheme === "dark" ? "#cbd5e1" : "#475569" }]}>Shared core services and dApp connectors power this app.</Text>
+      <Button title="Check network" onPress={async () => {
+        try {
+          await rpcBroker.call((rpc) => rpc.get_info());
+          setStatus("WAX network available");
+        } catch {
+          setStatus("All RPC endpoints unavailable");
+        }
+      }} />
+      <Text style={[styles.status, { color: scheme === "dark" ? "#93c5fd" : "#1d4ed8" }]}>{status}</Text>
+    </View>
+  </SafeAreaView>;
+}
+
+const styles = StyleSheet.create({ safe: { flex: 1 }, container: { flex: 1, padding: 24, justifyContent: "center", gap: 18 }, title: { fontSize: 32, fontWeight: "800" }, text: { fontSize: 16, lineHeight: 24 }, status: { marginTop: 8, fontSize: 16 } });

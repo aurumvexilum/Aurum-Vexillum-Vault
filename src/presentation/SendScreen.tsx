@@ -1,15 +1,16 @@
-import React, { useState } from "react";
-import { Card, CardContent, Stack, TextField, Button, Typography, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import React from "react";
+import { Link } from "react-router-dom";
+import { Alert, Box, Button, Card, CardContent, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Grid, Stack, TextField, Typography } from "@mui/material";
 import { buildTransferAction } from "../application/transaction-broker";
 import { useDashboardStore } from "../application/dashboard-store-v2";
 
 export function SendScreen() {
   const { account, tokens } = useDashboardStore();
-  const [recipient, setRecipient] = useState("");
-  const [amount, setAmount] = useState("");
-  const [memo, setMemo] = useState("");
-  const [preview, setPreview] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [recipient, setRecipient] = React.useState("");
+  const [amount, setAmount] = React.useState("");
+  const [memo, setMemo] = React.useState("");
+  const [preview, setPreview] = React.useState<any>(null);
+  const [error, setError] = React.useState<string | null>(null);
 
   const token = tokens.find((item) => item.symbol === "WAX") ?? { symbol: "WAX", contract: "eosio.token", precision: 8 };
 
@@ -27,8 +28,11 @@ export function SendScreen() {
   return (
     <Card>
       <CardContent>
-        <Stack spacing={2}>
-          <Typography variant="h5">Send</Typography>
+        <Stack spacing={2.5}>
+          <Box>
+            <Typography variant="h5">Send</Typography>
+            <Typography variant="body2" color="text.secondary">Prepare a validated transfer before signing.</Typography>
+          </Box>
           {error && <Alert severity="error">{error}</Alert>}
           <TextField label="From" value={account} disabled />
           <TextField label="Recipient" value={recipient} onChange={(e) => setRecipient(e.target.value)} />
@@ -36,20 +40,22 @@ export function SendScreen() {
           <TextField label="Memo" value={memo} onChange={(e) => setMemo(e.target.value)} />
           <Button variant="contained" onClick={handlePreview} disabled={!account || !recipient || !amount}>Review transaction</Button>
         </Stack>
-        {preview && (
-          <Dialog open={Boolean(preview)} onClose={() => setPreview(null)}>
-            <DialogTitle>Confirm transfer</DialogTitle>
-            <DialogContent>
-              <Typography>To: {preview.data.to}</Typography>
-              <Typography>Amount: {preview.data.quantity}</Typography>
-              <Typography>Memo: {preview.data.memo}</Typography>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setPreview(null)}>Cancel</Button>
-              <Button variant="contained" onClick={() => setPreview(null)}>Sign</Button>
-            </DialogActions>
-          </Dialog>
-        )}
+
+        {preview && <Dialog open onClose={() => setPreview(null)} maxWidth="sm" fullWidth>
+          <DialogTitle>Confirm transfer</DialogTitle>
+          <DialogContent>
+            <Stack spacing={1.5}>
+              <Typography><strong>To:</strong> {preview.data.to}</Typography>
+              <Typography><strong>Amount:</strong> {preview.data.quantity}</Typography>
+              <Typography><strong>Memo:</strong> {preview.data.memo || "none"}</Typography>
+              <Chip label={`Token: ${token.symbol}`} />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setPreview(null)}>Cancel</Button>
+            <Button variant="contained" onClick={() => setPreview(null)}>Sign now</Button>
+          </DialogActions>
+        </Dialog>}
       </CardContent>
     </Card>
   );
