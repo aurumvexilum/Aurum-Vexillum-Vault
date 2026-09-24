@@ -5,18 +5,6 @@ import { DashboardScreen } from "./presentation/DashboardScreen";
 import { SendScreen } from "./presentation/SendScreen";
 import { AssetsScreen } from "./presentation/AssetsScreen";
 import { RecoveryScreen } from "./presentation/RecoveryScreen";
-
-export default function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<Shell />}>
-          <Route path="/" element={<DashboardScreen />} />
-          <Route path="/send" element={<SendScreen />} />
-          <Route path="/assets" element={<AssetsScreen />} />
-          <Route path="/recovery" element={<RecoveryScreen />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
-  );
-}
+import { DappScreen } from "./presentation/DappScreen";
+import { TradeScreen } from "./presentation/TradeScreen";
+export default function App() { return <BrowserRouter><Routes><Route element={<Shell />}><Route path="/" element={<DashboardScreen />} /><Route path="/send" element={<SendScreen />} /><Route path="/assets" element={<AssetsScreen />} /><Route path="/recovery" element={<RecoveryScreen />} /><Route path="/dapps" element={<DappScreen />} /><Route path="/trade" element={<TradeScreen />} /></Route></Routes></BrowserRouter>; }
