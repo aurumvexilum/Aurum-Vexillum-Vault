@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "deploy": "npm run build && gh-pages -d dist",
     "mobile:sync": "npm run build && npx cap sync",
     "mobile:android": "npx cap open android",
     "mobile:ios": "npx cap open ios"
@@ -35,6 +36,7 @@
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "gh-pages": "^6.1.0",
     "typescript": "^5.5.4",
     "vite": "^5.4.8",
     "vitest": "^2.1.8"
