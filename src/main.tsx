@@ -1,6 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import { DashboardScreen } from "./presentation/DashboardScreen";
 import { AssetsScreen } from "./presentation/AssetsScreen";
 import { TokenAnalysisScreen } from "./presentation/TokenAnalysisScreen";
@@ -16,30 +16,26 @@ import { ExplorerScreen } from "./presentation/ExplorerScreen";
 import { SettingsScreen } from "./presentation/SettingsScreen";
 import { ResourcesScreen } from "./presentation/ResourcesScreen";
 
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <Shell />,
-    children: [
-      { index: true, element: <DashboardScreen /> },
-      { path: "assets", element: <AssetsScreen /> },
-      { path: "assets/analysis", element: <TokenAnalysisScreen /> },
-      { path: "nfts", element: <NftScreen /> },
-      { path: "resources", element: <ResourcesScreen /> },
-      { path: "send", element: <SendScreen /> },
-      { path: "receive", element: <ReceiveScreen /> },
-      { path: "trade", element: <TradeScreen /> },
-      { path: "dapps", element: <DappScreen /> },
-      { path: "favorites", element: <FavoritesScreen /> },
-      { path: "explorer", element: <ExplorerScreen /> },
-      { path: "recovery", element: <RecoveryScreen /> },
-      { path: "settings", element: <SettingsScreen /> },
-    ],
-  },
-]);
-
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <HashRouter>
+      <Routes>
+        <Route path="/" element={<Shell />}>
+          <Route index element={<DashboardScreen />} />
+          <Route path="assets" element={<AssetsScreen />} />
+          <Route path="assets/analysis" element={<TokenAnalysisScreen />} />
+          <Route path="nfts" element={<NftScreen />} />
+          <Route path="resources" element={<ResourcesScreen />} />
+          <Route path="send" element={<SendScreen />} />
+          <Route path="receive" element={<ReceiveScreen />} />
+          <Route path="trade" element={<TradeScreen />} />
+          <Route path="dapps" element={<DappScreen />} />
+          <Route path="favorites" element={<FavoritesScreen />} />
+          <Route path="explorer" element={<ExplorerScreen />} />
+          <Route path="recovery" element={<RecoveryScreen />} />
+          <Route path="settings" element={<SettingsScreen />} />
+        </Route>
+      </Routes>
+    </HashRouter>
   </React.StrictMode>,
 );
